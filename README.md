@@ -8,6 +8,8 @@ Tabelas de conteúdo
 1. [Pré-requisitos](#prerequisitos)
 2. [Colocando para funcionar](#funcionando)
 3. [Endpoints](#endpoints)
+4. [Como simular pedidos](#simulando)
+5. [Exemplo de logs](#logs)
 4. [Features](#features)
 5. [Arquitetura](#arquitetura)
 6. [Melhorias futuras](#melhorias)
@@ -47,7 +49,7 @@ $ cd backend-go-challenge
 # Instala as dependências
 $ go mod download
 
-# Roda a aplicação
+# Roda a aplicSimulandoação
 $ go run cmd/main.go
 
 # Roda os testes
@@ -85,6 +87,55 @@ $ docker run -p 8080:8080 backend-go-challenge
 ```
 
 *******
+
+<div id='simulando'/>
+
+## 📦 Como simular pedidos
+
+O serviço possui um gerador automático de pedidos que inicia junto com a aplicação. A cada **500ms** um novo pedido é gerado e enviado para a fila de processamento. A cada **5 pedidos**, 1 pedido inválido é gerado automaticamente para simular cenários de erro.
+
+Você pode acompanhar o processamento em tempo real pelos logs:
+```bash
+go run cmd/main.go
+```
+
+E verificar as métricas acumuladas pelo endpoint:
+```bash
+curl http://localhost:8080/metrics
+```
+
+Para verificar se o serviço está saudável:
+```bash
+curl http://localhost:8080/health
+```
+
+*******
+
+<div id='logs'/>
+
+### 📝 Exemplo de logs
+```json
+{"time":"2026-03-13T12:38:13.209008365-03:00","level":"INFO","msg":"order enqueued","order_id":"order-1773416293208980288","correlation_id":"corr-1773416293208980288"}
+{"time":"2026-03-13T12:38:13.20910405-03:00","level":"INFO","msg":"receiving order","order_id":"order-1773416293208980288","status":"pending","correlation_id":"corr-1773416293208980288"}
+{"time":"2026-03-13T12:38:13.209154546-03:00","level":"INFO","msg":"order processed successfully","order_id":"order-1773416293208980288","status":"processed","correlation_id":"corr-1773416293208980288"}
+```
+
+Pedido inválido:
+```json
+{"time":"2026-03-13T12:38:13.209008365-03:00","level":"INFO","msg":"generating invalid order","correlation_id":"corr-1773416293208980288"}
+{"time":"2026-03-13T12:38:13.209069617-03:00","level":"INFO","msg":"order enqueued","order_id":"","correlation_id":"corr-1773416293208980288"}
+{"time":"2026-03-13T12:38:13.209154546-03:00","level":"ERROR","msg":"invalid order","order_id":"","status":"failed","correlation_id":"corr-1773416293208980288","error":"order amount must be greater than zero"}
+```
+
+Graceful shutdown:
+```json
+{"time":"2026-03-13T12:38:19.545228888-03:00","level":"INFO","msg":"Shutting down order processing system"}
+{"time":"2026-03-13T12:38:19.545298591-03:00","level":"INFO","msg":"worker stopped","worker_id":0}
+{"time":"2026-03-13T12:38:19.545315633-03:00","level":"INFO","msg":"worker stopped","worker_id":4}
+```
+
+*******
+
 
 <div id='features'/>
 
