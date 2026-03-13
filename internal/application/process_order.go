@@ -8,17 +8,20 @@ import (
 
 	"github.com/raphaeltcf/backend-go-challenge/internal/application/dto"
 	"github.com/raphaeltcf/backend-go-challenge/internal/domain"
+	"github.com/raphaeltcf/backend-go-challenge/internal/infra/metrics"
 )
 
 type ProcessOrderUseCase struct {
-	repo   OrderRepository
-	logger *slog.Logger
+	repo    OrderRepository
+	logger  *slog.Logger
+	metrics *metrics.Metrics
 }
 
-func NewProcessOrderUseCase(repo OrderRepository, logger *slog.Logger) ProcessOrderUseCase {
+func NewProcessOrderUseCase(repo OrderRepository, logger *slog.Logger, m *metrics.Metrics) ProcessOrderUseCase {
 	return ProcessOrderUseCase{
-		repo:   repo,
-		logger: logger,
+		repo:    repo,
+		logger:  logger,
+		metrics: m,
 	}
 }
 
@@ -29,6 +32,7 @@ func (uc ProcessOrderUseCase) Execute(ctx context.Context, input dto.OrderInputD
 
 	if err := order.Validate(); err != nil {
 		uc.logger.ErrorContext(ctx, "invalid order", "order_id", input.OrderID, "error", err)
+		uc.metrics.IncInvalidOrders()
 		return dto.OrderOutputDTO{
 			OrderID:     input.OrderID,
 			Status:      string(domain.StatusFailed),
@@ -37,6 +41,15 @@ func (uc ProcessOrderUseCase) Execute(ctx context.Context, input dto.OrderInputD
 		}, fmt.Errorf("invalid order: %w", err)
 	}
 	var processErr error
+	existing, err := uc.repo.FindByID(ctx, input.OrderID)
+	if err == nil && existing.Status == domain.StatusProcessed {
+		uc.logger.InfoContext(ctx, "order already processed, skipping", "order_id", input.OrderID)
+		return dto.OrderOutputDTO{
+			OrderID:     existing.ID,
+			Status:      string(existing.Status),
+			ProcessedAt: time.Now(),
+		}, nil
+	}
 	for attempt := 0; attempt < 2; attempt++ {
 		if attempt > 0 {
 			uc.logger.WarnContext(ctx, "retrying order processing", "order_id", input.OrderID, "attempt", attempt)
@@ -51,6 +64,7 @@ func (uc ProcessOrderUseCase) Execute(ctx context.Context, input dto.OrderInputD
 
 	if processErr != nil {
 		uc.logger.ErrorContext(ctx, "failed to process order after retries", "order_id", input.OrderID, "error", processErr)
+		uc.metrics.IncFailedOrders()
 		order.Status = domain.StatusFailed
 		uc.repo.Save(ctx, order)
 		return dto.OrderOutputDTO{
@@ -68,6 +82,7 @@ func (uc ProcessOrderUseCase) Execute(ctx context.Context, input dto.OrderInputD
 	}
 
 	uc.logger.InfoContext(ctx, "order processed successfully", "order_id", input.OrderID)
+	uc.metrics.IncProcessedOrders()
 	return dto.OrderOutputDTO{
 		OrderID:     input.OrderID,
 		Status:      string(domain.StatusProcessed),

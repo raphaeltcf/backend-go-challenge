@@ -9,6 +9,7 @@ import (
 
 	"github.com/raphaeltcf/backend-go-challenge/internal/application/dto"
 	"github.com/raphaeltcf/backend-go-challenge/internal/domain"
+	"github.com/raphaeltcf/backend-go-challenge/internal/infra/metrics"
 )
 
 type mockRepository struct{}
@@ -24,7 +25,8 @@ func (m mockRepository) FindByID(ctx context.Context, id string) (domain.Order, 
 func TestProcessOrder_ValidOrder(t *testing.T) {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	repo := mockRepository{}
-	useCase := NewProcessOrderUseCase(repo, logger)
+	m := metrics.NewMetrics()
+	useCase := NewProcessOrderUseCase(repo, logger, m)
 
 	input := dto.OrderInputDTO{
 		OrderID:   "order-123",
@@ -50,7 +52,8 @@ func TestProcessOrder_ValidOrder(t *testing.T) {
 func TestProcessOrder_InvalidOrder(t *testing.T) {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	repo := mockRepository{}
-	useCase := NewProcessOrderUseCase(repo, logger)
+	m := metrics.NewMetrics()
+	useCase := NewProcessOrderUseCase(repo, logger, m)
 
 	input := dto.OrderInputDTO{
 		OrderID:   "",
@@ -68,7 +71,8 @@ func TestProcessOrder_InvalidOrder(t *testing.T) {
 func TestProcessOrder_NegativeAmount(t *testing.T) {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	repo := mockRepository{}
-	useCase := NewProcessOrderUseCase(repo, logger)
+	m := metrics.NewMetrics()
+	useCase := NewProcessOrderUseCase(repo, logger, m)
 
 	input := dto.OrderInputDTO{
 		OrderID:   "order-789",
@@ -86,8 +90,8 @@ func TestProcessOrder_NegativeAmount(t *testing.T) {
 func TestProcessOrder_EmptyUserID(t *testing.T) {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	repo := mockRepository{}
-	useCase := NewProcessOrderUseCase(repo, logger)
-
+	m := metrics.NewMetrics()
+	useCase := NewProcessOrderUseCase(repo, logger, m)
 	input := dto.OrderInputDTO{
 		OrderID:   "order-456",
 		UserID:    "",
@@ -104,7 +108,8 @@ func TestProcessOrder_EmptyUserID(t *testing.T) {
 func TestProcessOrder_ZeroAmount(t *testing.T) {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	repo := mockRepository{}
-	useCase := NewProcessOrderUseCase(repo, logger)
+	m := metrics.NewMetrics()
+	useCase := NewProcessOrderUseCase(repo, logger, m)
 
 	input := dto.OrderInputDTO{
 		OrderID:   "order-321",

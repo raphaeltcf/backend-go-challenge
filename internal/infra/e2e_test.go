@@ -9,6 +9,7 @@ import (
 
 	"github.com/raphaeltcf/backend-go-challenge/internal/application"
 	"github.com/raphaeltcf/backend-go-challenge/internal/application/dto"
+	"github.com/raphaeltcf/backend-go-challenge/internal/infra/metrics"
 	"github.com/raphaeltcf/backend-go-challenge/internal/infra/queue"
 	"github.com/raphaeltcf/backend-go-challenge/internal/infra/storage"
 	"github.com/raphaeltcf/backend-go-challenge/internal/infra/worker"
@@ -24,8 +25,8 @@ func TestE2E_ProcessOrder(t *testing.T) {
 	defer db.Close()
 
 	repo := storage.NewOrderRepository(db)
-
-	useCase := application.NewProcessOrderUseCase(repo, logger)
+	m := metrics.NewMetrics()
+	useCase := application.NewProcessOrderUseCase(repo, logger, m)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
