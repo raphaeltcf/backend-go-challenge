@@ -10,10 +10,11 @@ Tabelas de conteúdo
 3. [Endpoints](#endpoints)
 4. [Como simular pedidos](#simulando)
 5. [Exemplo de logs](#logs)
-4. [Features](#features)
-5. [Arquitetura](#arquitetura)
-6. [Melhorias futuras](#melhorias)
-7. [Feito utilizando](#built)
+6. [Testes](#testes)
+7. [Features](#features)
+8. [Arquitetura](#arquitetura)
+9. [Melhorias futuras](#melhorias)
+10. [Feito utilizando](#built)
 
 *******
 
@@ -134,7 +135,72 @@ Graceful shutdown:
 {"time":"2026-03-13T12:38:19.545315633-03:00","level":"INFO","msg":"worker stopped","worker_id":4}
 ```
 
+Métricas:
+```bash
+$ curl http://localhost:8080/metrics
+{"failure_rate":"16.67%","total_failed":0,"total_invalid":2,"total_processed":10}
+
+$ curl http://localhost:8080/metrics
+{"failure_rate":"15.38%","total_failed":0,"total_invalid":2,"total_processed":11}
+
+$ curl http://localhost:8080/metrics
+{"failure_rate":"14.29%","total_failed":0,"total_invalid":2,"total_processed":12}
+```
+
+Health check:
+```bash
+$ curl http://localhost:8080/health
+{"status":"ok"}
+```
+
+
 *******
+<div id='testes'/>
+## 🧪 Testes
+
+### Rodando os testes
+```bash
+# Todos os testes
+$ go test ./...
+
+# Com verbose para ver cada teste
+$ go test ./... -v
+
+# Só os testes unitários
+$ go test ./internal/application/...
+
+# Só o teste E2E
+$ go test ./internal/infra/...
+```
+
+### Testes unitários
+
+Testam o use case `ProcessOrderUseCase` de forma isolada usando um mock do repositório — sem banco de dados real.
+
+Cenários cobertos:
+- ✅ Pedido válido deve retornar `status: processed`
+- ✅ Pedido com `order_id` vazio deve retornar erro
+- ✅ Pedido com `amount` zero deve retornar erro
+- ✅ Pedido com `amount` negativo deve retornar erro
+- ✅ Pedido com `user_id` vazio deve retornar erro
+
+### Teste E2E
+
+Testa o fluxo completo da aplicação usando SQLite em memória (`:memory:`) — sem deixar arquivos no disco.
+
+Fluxo testado:
+```
+Enqueue → Worker Pool → Use Case → SQLite → FindByID → status: processed
+```
+
+### Testes no Docker
+
+O Dockerfile roda os testes automaticamente antes de compilar. Se algum teste falhar, o build para e o container não é criado:
+```bash
+$ docker build -t backend-go-challenge .
+# [tester] RUN go test ./...   ← testes rodam aqui
+# [builder] RUN go build ...   ← só compila se os testes passarem
+```
 
 
 <div id='features'/>
