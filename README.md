@@ -50,7 +50,7 @@ $ cd backend-go-challenge
 # Instala as dependências
 $ go mod download
 
-# Roda a aplicSimulandoação
+# Roda a aplicação
 $ go run cmd/main.go
 
 # Roda os testes
