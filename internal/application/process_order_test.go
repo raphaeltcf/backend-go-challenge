@@ -15,7 +15,7 @@ import (
 type mockRepository struct{}
 
 func (m mockRepository) Save(ctx context.Context, order domain.Order) error {
-	return nil // sempre sucesso
+	return nil
 }
 
 func (m mockRepository) FindByID(ctx context.Context, id string) (domain.Order, error) {
