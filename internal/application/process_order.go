@@ -37,6 +37,15 @@ func (uc ProcessOrderUseCase) Execute(ctx context.Context, input dto.OrderInputD
 		}, fmt.Errorf("invalid order: %w", err)
 	}
 	var processErr error
+	existing, err := uc.repo.FindByID(ctx, input.OrderID)
+	if err == nil && existing.Status == domain.StatusProcessed {
+		uc.logger.InfoContext(ctx, "order already processed, skipping", "order_id", input.OrderID)
+		return dto.OrderOutputDTO{
+			OrderID:     existing.ID,
+			Status:      string(existing.Status),
+			ProcessedAt: time.Now(),
+		}, nil
+	}
 	for attempt := 0; attempt < 2; attempt++ {
 		if attempt > 0 {
 			uc.logger.WarnContext(ctx, "retrying order processing", "order_id", input.OrderID, "attempt", attempt)
