@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/raphaeltcf/backend-go-challenge/internal/application"
+	"github.com/raphaeltcf/backend-go-challenge/internal/infra/correlation"
 	"github.com/raphaeltcf/backend-go-challenge/internal/infra/queue"
 )
 
@@ -32,9 +33,17 @@ func (wp WorkerPool) Start(ctx context.Context, numWorkers int) {
 					wp.logger.Info("worker stopped", "worker_id", workerID)
 					return
 				}
-				_, err = wp.useCase.Execute(ctx, order)
+
+				orderCtx := correlation.WithCorrelationID(ctx, order.CorrelationID)
+
+				_, err = wp.useCase.Execute(orderCtx, order)
 				if err != nil {
-					wp.logger.Error("failed to process order", "worker_id", workerID, "error", err)
+					wp.logger.ErrorContext(orderCtx, "failed to process order",
+						"worker_id", workerID,
+						"order_id", order.OrderID,
+						"correlation_id", order.CorrelationID,
+						"error", err,
+					)
 				}
 			}
 		}(i)

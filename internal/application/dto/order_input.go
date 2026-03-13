@@ -5,8 +5,9 @@ import (
 )
 
 type OrderInputDTO struct {
-	OrderID   string    `json:"order_id"`
-	UserID    string    `json:"user_id"`
-	Amount    float64   `json:"amount"`
-	Timestamp time.Time `json:"timestamp"`
+	OrderID       string    `json:"order_id"`
+	UserID        string    `json:"user_id"`
+	Amount        float64   `json:"amount"`
+	Timestamp     time.Time `json:"timestamp"`
+	CorrelationID string    `json:"correlation_id"`
 }
