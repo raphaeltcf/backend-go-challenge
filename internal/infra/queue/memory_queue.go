@@ -39,17 +39,32 @@ func (q *MemoryQueue) Dequeue(ctx context.Context) (dto.OrderInputDTO, error) {
 
 func StartGenerator(ctx context.Context, queue *MemoryQueue, logger *slog.Logger) {
 	go func() {
+		counter := 0
 		for {
 			select {
 			case <-ctx.Done():
 				logger.Info("Order generator stopped")
 				return
 			default:
-				order := dto.OrderInputDTO{
-					OrderID:   fmt.Sprintf("order-%d", time.Now().UnixNano()),
-					UserID:    fmt.Sprintf("user-%d", time.Now().UnixNano()),
-					Amount:    float64(time.Now().UnixNano()%1000 + 1),
-					Timestamp: time.Now(),
+				counter++
+
+				var order dto.OrderInputDTO
+
+				if counter%5 == 0 {
+					order = dto.OrderInputDTO{
+						OrderID:   "",
+						UserID:    fmt.Sprintf("user-%d", time.Now().UnixNano()),
+						Amount:    -1,
+						Timestamp: time.Now(),
+					}
+					logger.Info("Generating invalid order")
+				} else {
+					order = dto.OrderInputDTO{
+						OrderID:   fmt.Sprintf("order-%d", time.Now().UnixNano()),
+						UserID:    fmt.Sprintf("user-%d", time.Now().UnixNano()),
+						Amount:    float64(time.Now().UnixNano()%1000 + 1),
+						Timestamp: time.Now(),
+					}
 				}
 
 				if err := queue.Enqueue(ctx, order); err != nil {
